@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "signal_id": "daejeon-temperature-2m",
+  "description": "대전 2026-10-06·2026-10-07 실제 조회 기록 2건",
+  "records": [
+    {
+      "reading": {
+        "signal_id": "daejeon-temperature-2m",
+        "normalized_value": 12.7,
+        "unit": "°C",
+        "source_name": "Open-Meteo",
+        "source_url": "https://api.open-meteo.com/v1/forecast?latitude=36.3504&longitude=127.3845&current=temperature_2m&timezone=Asia%2FSeoul&temperature_unit=celsius",
+        "source_time": "2026-10-06T22:30:00+09:00",
+        "fetched_at": "2026-10-06T13:39:21.780538+00:00",
+        "record_timezone": "Asia/Seoul",
+        "record_date": "2026-10-06"
+      },
+      "raw": {
+        "latitude": 36.35,
+        "longitude": 127.375,
+        "generationtime_ms": 0.017642974853515625,
+        "utc_offset_seconds": 32400,
+        "timezone": "Asia/Seoul",
+        "timezone_abbreviation": "GMT+9",
+        "elevation": 59.0,
+        "current_units": {
+          "time": "iso8601",
+          "interval": "seconds",
+          "temperature_2m": "°C"
+        },
+        "current": {
+          "time": "2026-10-06T22:30",
+          "interval": 900,
+          "temperature_2m": 12.7
+        }
+      }
+    },
+    {
+      "reading": {
+        "signal_id": "daejeon-temperature-2m",
+        "normalized_value": 14.8,
+        "unit": "°C",
+        "source_name": "Open-Meteo",
+        "source_url": "https://api.open-meteo.com/v1/forecast?latitude=36.3504&longitude=127.3845&current=temperature_2m&timezone=Asia%2FSeoul&temperature_unit=celsius",
+        "source_time": "2026-10-07T22:30:00+09:00",
+        "fetched_at": "2026-10-07T13:40:45.923764+00:00",
+        "record_timezone": "Asia/Seoul",
+        "record_date": "2026-10-07"
+      },
+      "raw": {
+        "latitude": 36.35,
+        "longitude": 127.375,
+        "generationtime_ms": 0.015020370483398438,
+        "utc_offset_seconds": 32400,
+        "timezone": "Asia/Seoul",
+        "timezone_abbreviation": "GMT+9",
+        "elevation": 59.0,
+        "current_units": {
+          "time": "iso8601",
+          "interval": "seconds",
+          "temperature_2m": "°C"
+        },
+        "current": {
+          "time": "2026-10-07T22:30",
+          "interval": 900,
+          "temperature_2m": 14.8
+        }
+      }
+    }
+  ]
+}

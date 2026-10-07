@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#102d49"><meta name="description" content="대전 현재 기온을 매일 기록하고, 값이 오지 않을 때도 마지막 정상값을 지키는 날씨 정보판.">
+<title>대전 온도 기록 | 오늘의 진짜 정보판</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="fonts/noto-sans-kr.css"><link rel="stylesheet" href="style.css">
+<script defer src="core.js"></script><script defer src="data.js"></script><script defer src="app.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 이동</a>
+<header class="header"><div class="header-inner"><a class="brand" href="./"><span class="brand-mark" aria-hidden="true">°</span><span>오늘의 진짜 정보판<small>DAEJEON TEMPERATURE LOG</small></span></a><span class="timezone">Asia/Seoul <span>KST · UTC+9</span></span></div></header>
+<main id="main" class="shell">
+<div class="page-title"><div><p class="eyebrow">한 도시, 하루 한 기록</p><h1>대전의 온도를 기록합니다.</h1></div><p id="today-label" class="today"></p></div>
+<div class="tabs" role="tablist" aria-label="정보판 화면"><button id="tab-live" class="tab active" role="tab" aria-controls="live-panel" aria-selected="true">실제 날씨</button><button id="tab-replay" class="tab" role="tab" aria-controls="replay-panel" aria-selected="false" tabindex="-1">장애 재생 <span>합성 데이터</span></button></div>
+<section id="live-panel" role="tabpanel" aria-labelledby="tab-live">
+<div class="weather-card"><div class="temperature-side"><div class="card-kicker"><span>대전 · 현재 기온</span><span id="live-badge" class="badge">보관된 기록</span></div><div id="live-temperature" class="temperature">—<span>°C</span></div><p id="live-delta" class="delta">다른 날짜의 기록을 기다리고 있어요.</p><p class="definition">지상 2m의 모델 기반 기온<br>요청 좌표 36.3504° N · 127.3845° E</p><button id="fetch-live" class="primary"><span aria-hidden="true">↻</span> 현재 기온 조회·저장</button></div><div class="source-side"><h2>이 값은 어디에서 왔나요?</h2><dl id="live-meta"></dl><p class="source-note">Open-Meteo의 기상 모델 기반 값입니다.<br>관측소에서 직접 측정한 실측값과 다를 수 있어요.</p><a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Weather data by Open-Meteo</a></div></div>
+<div id="live-notice" class="notice" role="status" aria-live="polite"></div>
+<div id="storage-notice" class="notice warning" role="status" hidden></div>
+<section class="section"><div class="section-head"><div><p class="eyebrow">DAILY RECORDS</p><h2>하루 한 줄의 기록</h2></div><span id="record-count" class="count"></span></div><div id="progress" class="progress"></div><p class="hint">같은 KST 날짜는 최신 성공값으로 갱신합니다. 실패한 조회는 기존 값을 바꾸지 않습니다.</p><div class="table-wrap"><table><caption class="sr-only">실제 일별 기온 기록</caption><thead><tr><th scope="col">KST 날짜</th><th scope="col">저장 기온</th><th scope="col">변화</th><th scope="col">원천 시각 · KST</th><th scope="col">조회 시각 · KST</th><th scope="col">대조</th></tr></thead><tbody id="daily-rows"></tbody></table></div><p id="calculation" class="calculation"></p></section>
+<section class="record-tools"><div><h3>기록을 공개 화면에도 남기기</h3><p>새 기록은 이 브라우저에 저장돼요. <strong>records.json</strong>을 내려받아 GitHub 저장소의 같은 파일을 교체하면 시크릿 창에서도 보입니다.</p></div><div class="tool-buttons"><button id="export-records" class="secondary">records.json 내려받기</button><label class="secondary upload-label" for="import-records">기록 파일 불러오기</label><input id="import-records" class="sr-only" type="file" accept=".json,application/json"></div><p id="publish-status" class="publish-status"></p></section>
+<details class="evidence"><summary>원자료 · 저장값 · 화면값 대조</summary><div id="evidence-content"></div></details>
+</section>
+<section id="replay-panel" role="tabpanel" aria-labelledby="tab-replay" hidden>
+<div class="replay-intro"><div><p class="eyebrow">FAILURE LAB</p><h2>데이터가 안 올 때도, 정직하게.</h2><p>공식 fixture의 합성 지표(<strong>pt</strong>)만 재생합니다. 실제 대전 기록과 별도로 저장됩니다.</p></div><button id="reset-replay" class="secondary">합성 상태 초기화</button></div>
+<div class="fixture-controls"><div><span class="control-label">정상·날짜 전환</span><div class="button-row"><button data-fixture="normal-d1-a">D1-A · 100</button><button data-fixture="normal-d1-b">D1-B · 105</button><button data-fixture="normal-d2">D2 · 120</button></div></div><div><span class="control-label">5가지 실패 · 각 버튼은 D1-A → D1-B 후 실패를 재생</span><div class="button-row"><button data-failure="timeout">느린 응답</button><button data-failure="auth-401">401 거절</button><button data-failure="rate-429">429 호출 제한</button><button data-failure="offline">오프라인</button><button data-failure="schema-break">형식 변경</button></div></div></div>
+<div class="replay-result" aria-live="polite"><div><p class="eyebrow">마지막 정상 합성값</p><div id="replay-temperature" class="replay-value">—</div><span id="replay-badge" class="badge">초기 상태</span></div><div><h3 id="replay-title">정상값부터 재생해 보세요.</h3><p id="replay-message">D1-A와 D1-B는 같은 날짜여서 기록 한 줄을 공유합니다.</p><button id="recover-replay" class="primary">다시 시도 · RECOVER-D2</button></div></div>
+<div class="state-grid"><div><span>freshness</span><strong id="debug-freshness">—</strong></div><div><span>error_code</span><strong id="debug-error">—</strong></div><div><span>일별 행 수</span><strong id="debug-rows">0</strong></div><div><span>변화 절대값</span><strong id="debug-delta">—</strong></div></div>
+<div class="table-wrap"><table><caption class="sr-only">합성 일별 기록</caption><thead><tr><th>합성 KST 날짜</th><th>값</th><th>고정 record ID</th><th>갱신 시각</th></tr></thead><tbody id="replay-rows"></tbody></table></div>
+<details class="evidence"><summary>재생 순서와 상태 JSON</summary><ol id="replay-log"></ol><pre id="replay-json"></pre></details>
+<div class="asset-check"><div><h3>공식 자산 무결성</h3><p>aleph-t04-real-information-board-public-contract-v2<br>SHA-256 · 원본 17개 파일</p></div><button id="verify-assets" class="secondary">파일 해시 확인</button><p id="asset-result" role="status">제작 시 17/17 일치. 공개 사이트에서 다시 확인할 수 있어요.</p></div>
+</section>
+<footer><p>T04 · 오늘의 진짜 정보판</p><p>실제 기록과 합성 시험을 구분합니다. 기준 시간대는 항상 Asia/Seoul입니다.</p></footer>
+</main>
+<dialog id="record-dialog"><div class="dialog-head"><h2>기록 원자료 대조</h2><button id="close-dialog" class="secondary">닫기</button></div><div id="record-detail"></div></dialog>
+</body></html>
