@@ -3,7 +3,6 @@
 
 /* global module */
 
-// ALEPH T04 replay adapter 예제입니다.
 // 이 파일은 결정론 fixture와 reset 계약을 보여 주는 최소 참조 구현입니다.
 // 실제 앱에서는 같은 상태 전이를 자신의 DB 트랜잭션으로 옮기세요.
 
