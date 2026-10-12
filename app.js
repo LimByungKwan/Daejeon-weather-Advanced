@@ -1,6 +1,7 @@
+
 (function(){
 'use strict';
-const C = WeatherCore, D = WEATHER_DATA;
+const C = WeatherCore, D = WEATHER_DATA, G = globalThis.WeatherDiagnostic;
 const SOURCE_URL = 'https://api.open-meteo.com/v1/forecast?latitude=36.3504&longitude=127.3845&current=temperature_2m&timezone=Asia%2FSeoul&temperature_unit=celsius';
 const STORE = 't04-daejeon-live-20261006-20261007-v2', REPLAY_STORE = 't04-daejeon-replay-v1';
 const $ = id => document.getElementById(id);
@@ -17,6 +18,7 @@ const failureText = {
  offline:['원천에 연결할 수 없어요.','인터넷 연결 또는 원천 서버 연결을 확인한 뒤 다시 시도해 주세요.'],
  schema_error:['응답 형식이 달라졌어요.','기온·단위·시각의 형식이 예상과 다릅니다. 원천 응답과 앱의 처리 규칙을 확인해 주세요.']
 };
+
 function normalize(raw,at){
  if(!raw || raw.timezone!=='Asia/Seoul' || raw.utc_offset_seconds!==32400 || raw.current_units?.temperature_2m!=='°C' || raw.current_units?.time!=='iso8601' || typeof raw.current?.temperature_2m!=='number' || !Number.isFinite(raw.current.temperature_2m) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(raw.current?.time || '')) throw new TypeError('invalid upstream schema');
  const sourceTime=raw.current.time+(raw.current.time.length===16?':00':'')+'+09:00';
@@ -25,6 +27,7 @@ function normalize(raw,at){
  if(Math.abs(raw.latitude-36.3504)>.15 || Math.abs(raw.longitude-127.3845)>.15 || !Number.isFinite(raw.latitude) || !Number.isFinite(raw.longitude)) throw new TypeError('location mismatch');
  return reading;
 }
+
 function validateDocument(doc){
  if(doc?.schema_version!==1 || doc.signal_id!=='daejeon-temperature-2m' || !Array.isArray(doc.records) || doc.records.length>3660) throw new TypeError('기록 파일 형식이 맞지 않습니다.');
  const seen=new Set();
@@ -36,6 +39,7 @@ function validateDocument(doc){
   return {reading:expected,raw:clone(item.raw)};
  }).sort((a,b)=>a.reading.fetched_at.localeCompare(b.reading.fetched_at));
 }
+
 function merge(items){
  for(const item of items){
   const old=live.daily_readings.find(r=>r.record_date===item.reading.record_date);
@@ -50,6 +54,7 @@ function merge(items){
   live.last_delta=live.last_comparison.magnitude;
  }
 }
+
 function recordDocument(){return {schema_version:1,signal_id:'daejeon-temperature-2m',description:'대전 고정 좌표의 모델 기반 현재 기온 · 실제 조회 기록',records:live.daily_readings.map(r=>({reading:clone(r.reading),raw:clone(rawByDate[r.record_date])}))};}
 function persist(){
  try {localStorage.setItem(STORE,JSON.stringify({document:recordDocument(),status:live.status,last_run:live.last_run}));storageError=false;}
@@ -57,6 +62,7 @@ function persist(){
  $('storage-notice').hidden=!storageError;
  if(storageError)$('storage-notice').textContent='브라우저 저장 공간을 사용할 수 없어 이 화면에서만 기록을 유지합니다. 창을 닫기 전에 records.json을 내려받아 주세요.';
 }
+
 function publishedMatches(row){return published.some(p=>C.NORMALIZED_KEYS.every(k=>p.reading[k]===row.reading[k]));}
 function previousFor(row,rows){return rows.filter(r=>r.signal_id===row.signal_id && r.record_date<row.record_date).at(-1);}
 function deltaLabel(row,rows){
@@ -65,6 +71,7 @@ function deltaLabel(row,rows){
  const delta=row.normalized_value-prev.normalized_value;
  return (delta>0?'+':'')+number(delta)+' '+row.unit;
 }
+
 function nextDate(date){return new Date(Date.parse(date+'T00:00:00+09:00')+86400000).toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});}
 function renderLive(){
  const r=live.current_reading,s=live.status;
@@ -72,15 +79,18 @@ function renderLive(){
  const age=r?Date.now()-new Date(r.source_time).getTime():Infinity;
  const failed=s?.error_code && s.error_code!=='none';
  const fresh=r && sessionFetched && age<=30*60000 && !failed;
- $('live-badge').textContent=failed?'오래된 값':fresh?'최신 조회값':age>30*60000?'오래된 보관값':'보관된 기록';
+ $('live-badge').textContent=!r?'데이터 없음':failed?'오래된 값':fresh?'최신 조회값':age>30*60000?'오래된 보관값':'보관된 기록';
  $('live-badge').className='badge '+(failed || age>30*60000?'stale':fresh?'fresh':'');
  const rows=live.daily_readings;
  const latest=rows.at(-1),prev=latest?previousFor(latest,rows):null;
  $('live-delta').textContent=prev?`${nextDate(prev.record_date)===latest.record_date?'어제':'직전 기록'}보다 ${deltaLabel(latest,rows)}`:'다른 날짜의 실제 기록을 기다리고 있어요.';
  $('live-meta').innerHTML=`<div><dt>출처</dt><dd><a href="${SOURCE_URL}" target="_blank" rel="noopener noreferrer">Open-Meteo · 원천 응답</a></dd></div><div><dt>원천 시각</dt><dd>${esc(time(r?.source_time))}</dd></div><div><dt>조회 시각</dt><dd>${esc(time(r?.fetched_at))}</dd></div><div><dt>기준 시간대</dt><dd>Asia/Seoul · UTC+9</dd></div><div><dt>기온 단위</dt><dd>°C · 섭씨</dd></div>`;
+ const dg=G?G.diagnoseWeatherStatus(live,{now:Date.now()}):null,dgBox=$('live-diagnostic');
+ if(dg&&dgBox){dgBox.className='notice'+(dg.level==='fresh'?'':' warning');dgBox.textContent=dg.message+(dg.lastCollectedAt?' 마지막 정상 수집: '+time(dg.lastCollectedAt)+' KST':'');}
  const notice=$('live-notice');notice.className='notice'+(failed?' warning':'');
- if(failed){const t=failureText[s.error_code];notice.textContent=t[0]+' '+t[1]+(live.last_run?.retry_after_seconds?' '+live.last_run.retry_after_seconds+'초 대기.':'')+' 마지막 정상값과 일별 기록을 유지합니다.';}
- else if(busy)notice.textContent='공개 원천을 조회 중입니다. 기존 정상값은 그대로 유지합니다.';
+ if(failed){const t=failureText[s.error_code];notice.textContent=t[0]+' '+t[1]+(live.last_run?.retry_after_seconds?' '+live.last_run.retry_after_seconds+'초 대기.':'')+(r?' 마지막 정상값과 일별 기록을 유지합니다.':' 저장된 정상 데이터가 없어 표시할 값이 없습니다.');}
+ else if(busy)notice.textContent=r?'공개 원천을 조회 중입니다. 기존 정상값은 그대로 유지합니다.':'공개 원천을 조회 중입니다.';
+ else if(!r)notice.textContent='저장된 날씨 데이터가 없습니다. 조회·저장 버튼을 눌러 현재 기온을 가져와 주세요.';
  else notice.textContent=sessionFetched?'조회 성공. 실제 응답·원천 시각·조회 시각을 일별 기록에 함께 저장했습니다.':'저장한 실제 응답을 표시합니다. 현재 기온이 필요하면 조회·저장 버튼을 눌러 주세요.';
  $('fetch-live').disabled=busy;
  $('fetch-live').innerHTML=busy?'조회 중…':failed?'↻ 다시 시도 · 현재 기온 조회':'↻ 현재 기온 조회·저장';
@@ -94,6 +104,7 @@ function renderLive(){
  const p=document.createElement('p');p.className='detail-info';p.textContent='날짜별 대조 보기에서 전체 원응답과 저장값을 확인할 수 있습니다. 아래 payload는 플랫폼에 전달할 필드이며, 플랫폼이 발급한 봉인 영수증이 아닙니다.';e.append(p);
  const pre=document.createElement('pre');pre.textContent=JSON.stringify(rows.map(row=>({record_date:row.record_date,source_url:row.reading.source_url,source_observed_at:row.reading.source_time,normalized_value:row.normalized_value,unit:row.unit,fetched_at:row.reading.fetched_at})),null,2);e.append(pre);
 }
+
 async function saveLive(){
  const action=()=>{
   const status=live.status, last=live.last_run;
@@ -102,6 +113,7 @@ async function saveLive(){
  };
  if(navigator.locks)await navigator.locks.request(STORE,action);else action();
 }
+
 async function fetchLive(){
  if(busy)return;busy=true;renderLive();
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);
@@ -115,11 +127,13 @@ async function fetchLive(){
  }catch(error){live=C.applyError(live,error.code || (error.name==='AbortError'?'timeout':'offline'),{virtual_now:new Date().toISOString(),retry_after_seconds:error.retry_after_seconds});}
  finally{clearTimeout(timer);await saveLive();busy=false;renderLive();}
 }
+
 function detailsFor(date){
  const row=live.daily_readings.find(x=>x.record_date===date),raw=rawByDate[date];if(!row)return;
  $('record-detail').innerHTML=`<p class="detail-info">${esc(date)} · ${esc(row.record_id)}</p><div class="detail-grid"><div>원자료 current.temperature_2m<strong>${esc(number(raw.current.temperature_2m))} °C</strong></div><div>저장 normalized_value<strong>${esc(number(row.normalized_value))} °C</strong></div><div>화면 표시값<strong>${esc(number(row.normalized_value))} °C</strong></div></div><p class="detail-info">원천 시각: ${esc(time(row.reading.source_time))}<br>조회 시각: ${esc(time(row.reading.fetched_at))}<br><a href="${SOURCE_URL}" target="_blank" rel="noopener noreferrer">원천 URL</a> · Asia/Seoul</p><h3>원응답</h3><pre id="raw-detail"></pre><h3>저장된 일별 행</h3><pre id="row-detail"></pre>`;
  $('raw-detail').textContent=JSON.stringify(raw,null,2);$('row-detail').textContent=JSON.stringify(row,null,2);$('record-dialog').showModal();
 }
+
 function persistReplay(){try{localStorage.setItem(REPLAY_STORE,JSON.stringify({state:replay,log:replayLog}));}catch{}}
 function run(name){const fixture=D.fixtures[name];replay=C.runFixture(replay,fixture);replayLog.push(fixture.fixture_id);persistReplay();renderReplay();}
 function resetReplay(){replay=C.resetEvaluationState();replayLog=[];persistReplay();renderReplay();}
@@ -133,9 +147,11 @@ function renderReplay(){
  $('replay-rows').innerHTML=replay.daily_readings.map(row=>`<tr><td>${esc(row.record_date)}</td><td><strong>${esc(row.normalized_value)}</strong> ${esc(row.unit)}</td><td>${esc(row.record_id)}</td><td>${esc(time(row.last_fetched_at))}</td></tr>`).join('') || '<tr><td colspan="4">합성 기록이 없습니다.</td></tr>';
  $('replay-log').innerHTML=replayLog.slice(-50).map(name=>`<li>${esc(name)}</li>`).join('');$('replay-json').textContent=JSON.stringify(replay,null,2);
 }
+
 function switchTab(name){
- for(const tab of ['live','replay']){const active=tab===name;$('tab-'+tab).classList.toggle('active',active);$('tab-'+tab).setAttribute('aria-selected',String(active));$('tab-'+tab).tabIndex=active?0:-1;$(tab+'-panel').hidden=!active;}
+ for(const tab of ['live','replay']){const active=tab===name;$('tab-'+tab).classList.toggle('active',active);$('tab-'+tab).setAttribute('aria-selected',String(active));tabIndex=active?0:-1;$(tab+'-panel').hidden=!active;}
 }
+
 async function verifyAssets(){
  const btn=$('verify-assets');btn.disabled=true;$('asset-result').textContent='17개 원본 파일의 SHA-256을 계산 중입니다…';
  try{
@@ -145,6 +161,7 @@ async function verifyAssets(){
   $('asset-result').textContent=passed===17?'17/17 일치 · 공식 자산의 SHA-256과 파일 크기가 모두 일치합니다.':`${passed}/17 일치 · 다른 파일: ${errors.join(', ')}`;
  }catch(e){$('asset-result').textContent=e.message;}finally{btn.disabled=false;}
 }
+
 async function init(){
  published=validateDocument(D.initial);merge(published);
  let cached;
@@ -168,6 +185,7 @@ async function init(){
  $('reset-replay').addEventListener('click',resetReplay);$('recover-replay').addEventListener('click',()=>run('recover-d2'));$('verify-assets').addEventListener('click',verifyAssets);
  setInterval(()=>{if(!busy)renderLive();},60000);
 }
+
 // 같은 정규화·일별 저장 경로는 실제 응답과 합성 fixture에 모두 적용됩니다.
 globalThis.WeatherApp={normalize,validateDocument,fetchLive,getState:()=>clone(live),getReplay:()=>clone(replay),recordDocument};
 init().catch(error=>{$('live-notice').className='notice warning';$('live-notice').textContent='초기화 실패: '+error.message+' 파일을 다시 불러와 주세요.';});
