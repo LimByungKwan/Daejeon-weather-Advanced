@@ -149,7 +149,7 @@ function renderReplay(){
 }
 
 function switchTab(name){
- for(const tab of ['live','replay']){const active=tab===name;$('tab-'+tab).classList.toggle('active',active);$('tab-'+tab).setAttribute('aria-selected',String(active));tabIndex=active?0:-1;$(tab+'-panel').hidden=!active;}
+ for(const tab of ['live','replay']){const active=tab===name;$('tab-'+tab).classList.toggle('active',active);$('tab-'+tab).setAttribute('aria-selected',String(active));$('tab-'+tab).tabIndex=active?0:-1;$(tab+'-panel').hidden=!active;}
 }
 
 async function verifyAssets(){
