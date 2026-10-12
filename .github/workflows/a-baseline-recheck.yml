@@ -1,0 +1,33 @@
+
+name: AI A Baseline Recheck
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Recheck AI A final source
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout AI A final version
+        uses: actions/checkout@v4
+        with:
+          ref: a5738b528ad62734c29cf0f90260254d4103f79a
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Get fixed tests from AI B version
+        run: |
+          git fetch --depth=1 origin f09f27bf147d9472d0c32e2216699b0f22517018
+          git show f09f27bf147d9472d0c32e2216699b0f22517018:tests/fixed-checks.test.cjs > tests/fixed-checks.test.cjs
+
+      - name: Run fixed checks T01-T09 on AI A source
+        run: node --test tests/fixed-checks.test.cjs
