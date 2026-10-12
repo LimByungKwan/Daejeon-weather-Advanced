@@ -1,5 +1,5 @@
 
-name: T05 AI-A Diagnostic Tests
+name: AI-A Diagnostic Tests
 
 on:
   workflow_dispatch:
@@ -26,3 +26,6 @@ jobs:
 
       - name: Test existing weather board
         run: node --test tests/core.test.cjs tests/app.test.cjs
+
+      - name: Test fixed checks T01-T09
+        run: node --test tests/fixed-checks.test.cjs
