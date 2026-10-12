@@ -1,0 +1,28 @@
+
+name: T05 AI-A Diagnostic Tests
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Weather Diagnostic Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test AI-A diagnostic function
+        run: node --test tests/status-diagnostic.test.cjs
+
+      - name: Test existing weather board
+        run: node --test tests/core.test.cjs tests/app.test.cjs
